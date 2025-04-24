@@ -8,6 +8,11 @@
  * for the sole purpose of studying while attending the course CO2018.
  */
 
+ /*
+    Modified by Nguyen Thien Tri:
+    the function prototype for free_pcb_memph has been added
+ */
+
 #include "common.h"
 
 #define SYSMEM_MAP_OP 1
@@ -23,3 +28,6 @@ int liballoc(struct pcb_t *, uint32_t, uint32_t);
 int libfree(struct pcb_t *, uint32_t);
 int libread(struct pcb_t*, uint32_t, uint32_t, uint32_t*);
 int libwrite(struct pcb_t*, BYTE, uint32_t, uint32_t);
+//Add function prototype
+int free_pcb_memph(struct pcb_t *caller);
+   

@@ -8,10 +8,21 @@
  * for the sole purpose of studying while attending the course CO2018.
  */
 
+ /*
+    Modified by Nguyen Thien Tri:
+    implement killall syscall
+    queue.h and string.h have been added
+ */
+
 #include "common.h"
 #include "syscall.h"
 #include "stdio.h"
 #include "libmem.h"
+
+//for traversing the proclist
+#include "queue.h" 
+//for checking if the process matches proc_name
+#include <string.h> 
 
 int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
 {
@@ -43,6 +54,31 @@ int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
      *       all processes with given
      *        name in var proc_name
      */
+
+    //define a macro to traverse the proclist and terminate if match
+    #define TRAVERSE_AND_KILL(queue)\ 
+    {\
+        for (int i = 0; i < queue->size; ++i){\
+            struct pcb_t *proc = (queue)->proc[i];\
+
+            if (proc != NULL && strcmp(proc->path, proc_name) == 0){\
+                //terminate
+                free_pcb_memph(proc); \
+                
+                //shift the remanining ones to the left
+                for (int j = i; j < queue->size - 1; ++j){\
+                    (queue)->proc[j] = (queue)->proc[j+1]; \ 
+                }\
+
+                (queue)->proc[queue->size - 1] = NULL; \
+                --(queue)->size; \
+            }\    
+        }\
+    }
+    
+    if (caller->ready_queue) TRAVERSE_AND_KILL(caller->ready_queue);
+    if (caller->running_list) TRAVERSE_AND_KILL(caller->running_list);
+    if (caller->mlq_ready_queue) TRAVERSE_AND_KILL(caller->mlq_ready_queue);
 
     return 0; 
 }
