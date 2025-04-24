@@ -158,17 +158,32 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
    return 0;
 }
 
+
 int MEMPHY_dump(struct memphy_struct *mp)
 {
   /*TODO dump memphy contnt mp->storage
    *     for tracing the memory content
    */
-   for (int i = 0; i < mp->maxsz; i++) {
-      printf("%02X ", mp->storage[i]);
-      if ((i + 1) % 16 == 0) printf("\n");
-   }
+  dump_memphy(mp);
+  return 0;
+}
 
-   return 0;
+void dump_memphy(struct memphy_struct *mp){
+   int i;
+   int max_bytes = mp->maxsz;
+
+   printf("==== Dump memphy content ====\n");
+
+   for (i = 0; i < max_bytes; i++){
+      printf("%02x", mp->storage[i]);
+
+      if((i + 1) % 16 == 0)
+         printf("\n");
+   }
+   if(max_bytes % 16 != 0)
+      printf("\n");
+
+   printf("==== End dump ====\n");
 }
 
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
