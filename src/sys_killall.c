@@ -14,13 +14,13 @@
     queue.h and string.h have been added
  */
 
-#include "common.h"
-#include "syscall.h"
+#include "../include/common.h"
+#include "../include/syscall.h"
 #include "stdio.h"
-#include "libmem.h"
+#include "../include/libmem.h"
 
 //for traversing the proclist
-#include "queue.h" 
+#include "../include/queue.h" 
 //for checking if the process matches proc_name
 #include <string.h> 
 
@@ -56,25 +56,24 @@ int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
      */
 
     //define a macro to traverse the proclist and terminate if match
-    #define TRAVERSE_AND_KILL(queue)\ 
-    {\
-        for (int i = 0; i < queue->size; ++i){\
-            struct pcb_t *proc = (queue)->proc[i];\
-
-            if (proc != NULL && strcmp(proc->path, proc_name) == 0){\
-                //terminate
+    #define TRAVERSE_AND_KILL(q)\
+    { \
+        for (int i = 0; i < (q)->size; ++i) { \
+            struct pcb_t *proc = (q)->proc[i]; \
+            if (proc != NULL && strcmp(proc->path, proc_name) == 0) { \
+                /*terminate*/\
                 free_pcb_memph(proc); \
-                
-                //shift the remanining ones to the left
-                for (int j = i; j < queue->size - 1; ++j){\
-                    (queue)->proc[j] = (queue)->proc[j+1]; \ 
-                }\
-
-                (queue)->proc[queue->size - 1] = NULL; \
-                --(queue)->size; \
-            }\    
-        }\
+                /*shift the remanining ones to the left*/ \
+                for (int j = i; j < (q)->size - 1; ++j) { \
+                    (q)->proc[j] = (q)->proc[j+1]; \
+                } \
+                (q)->proc[(q)->size - 1] = NULL; \
+                --(q)->size; \
+                --i;  \
+            } \
+        } \
     }
+
     
     if (caller->ready_queue) TRAVERSE_AND_KILL(caller->ready_queue);
     if (caller->running_list) TRAVERSE_AND_KILL(caller->running_list);
