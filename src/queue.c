@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "../include/queue.h"
+
+static pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int empty(struct queue_t * q) {
         if (q == NULL) return 1;
@@ -9,8 +12,12 @@ int empty(struct queue_t * q) {
 
 void enqueue(struct queue_t * q, struct pcb_t * proc){
         if(q == NULL || proc == NULL) return;
-        if(q == NULL || q->size >= MAX_QUEUE_SIZE)
-        return;
+
+        pthread_mutex_lock(&queue_lock);
+        if(q == NULL || q->size >= MAX_QUEUE_SIZE) {
+                pthread_mutex_unlock(&queue_lock);
+                return;
+        }
         
         // back(đưa vào): đầu array
         // front(đưa ra): cuối array
@@ -23,10 +30,18 @@ void enqueue(struct queue_t * q, struct pcb_t * proc){
         }
         q->proc[i+1] = proc;
         q->size++;
+
+        pthread_mutex_unlock(&queue_lock);
 }
 
 struct pcb_t* dequeue(struct queue_t *q) {
-        if (q == NULL || q->size == 0) return NULL;
+        if (q == NULL) return NULL;
+
+        pthread_mutex_lock(&queue_lock);
+        if (q->size == 0) {
+                pthread_mutex_unlock(&queue_lock);
+                return NULL;
+        }
     
 #ifdef MLQ_SCHED
         // chọn process có prio thấp nhất (ưu tiên cao)
@@ -47,6 +62,8 @@ struct pcb_t* dequeue(struct queue_t *q) {
         q->proc[i] = q->proc[i + 1];
         
         q->size--;
+
+        pthread_mutex_unlock(&queue_lock);
 
         return chosen;
 }

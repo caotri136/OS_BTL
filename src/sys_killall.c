@@ -18,14 +18,21 @@
 #include "../include/syscall.h"
 #include "stdio.h"
 #include "../include/libmem.h"
+#include <pthread.h>
 
 //for traversing the proclist
 #include "../include/queue.h" 
 //for checking if the process matches proc_name
-#include <string.h> 
+#include <string.h>
+
+pthread_mutex_t sys_kill_lock;
+
 
 int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
 {
+
+    pthread_mutex_init(&sys_kill_lock, NULL);
+
     char proc_name[100];
     uint32_t data;
 
@@ -58,6 +65,7 @@ int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
     //define a macro to traverse the proclist and terminate if match
     #define TRAVERSE_AND_KILL(q)\
     { \
+        pthread_mutex_lock(&sys_kill_lock);\
         for (int i = 0; i < (q)->size; ++i) { \
             struct pcb_t *proc = (q)->proc[i]; \
             if (proc != NULL && strcmp(proc->path, proc_name) == 0) { \
@@ -72,6 +80,7 @@ int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
                 --i;  \
             } \
         } \
+        pthread_mutex_unlock(&sys_kill_lock);\
     }
 
     

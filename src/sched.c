@@ -20,7 +20,7 @@ int queue_empty(void) {
 #ifdef MLQ_SCHED
     for(int prio = 0; prio < MAX_PRIO; prio++){
         if(!empty(&mlq_ready_queue[prio])) 
-        return -1; 
+        return -1;
     }
     return 1;
 #else
