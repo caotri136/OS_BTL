@@ -32,7 +32,7 @@ int MEMPHY_mv_csr(struct memphy_struct *mp, int offset)
       numstep++;
    }
 
-   pthread_mutex_lock(&lock);
+   pthread_mutex_unlock(&lock);
 
    return 0;
 }
@@ -68,14 +68,14 @@ int MEMPHY_read(struct memphy_struct *mp, int addr, BYTE *value)
    if (mp == NULL)
       return -1;
 
-   pthread_mutex_lock(lock);
+   pthread_mutex_lock(&lock);
 
    if (mp->rdmflg) {
       *value = mp->storage[addr];
       pthread_mutex_unlock(&lock);
    }
    else /* Sequential access device */ {
-      pthread_mutex_unlock(lock);
+      pthread_mutex_unlock(&lock);
       return MEMPHY_seq_read(mp, addr, value);   
    }
    return 0;
@@ -113,14 +113,14 @@ int MEMPHY_write(struct memphy_struct *mp, int addr, BYTE data)
    if (mp == NULL)
       return -1;
 
-   pthread_mutex_lock(lock);
+   pthread_mutex_lock(&lock);
 
    if (mp->rdmflg) {
       mp->storage[addr] = data;
-      pthread_mutex_unlock(lock);
+      pthread_mutex_unlock(&lock);
    }
    else /* Sequential access device */ {
-      pthread_mutex_unlock(lock);
+      pthread_mutex_unlock(&lock);
       return MEMPHY_seq_write(mp, addr, data);
    }
    return 0;
@@ -165,7 +165,7 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
    if (fp == NULL)
       return -1;
 
-   pthread_mutex_lock(lock);
+   pthread_mutex_lock(&lock);
 
    *retfpn = fp->fpn;
    mp->free_fp_list = fp->fp_next;
@@ -175,7 +175,7 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
     */
    free(fp);
 
-   pthread_mutex_unlock(lock);
+   pthread_mutex_unlock(&lock);
 
    return 0;
 }
@@ -204,12 +204,12 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
    struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
 
 
-   pthread_mutex_lock(lock);
+   pthread_mutex_lock(&lock);
    /* Create new node with value fpn */
    newnode->fpn = fpn;
    newnode->fp_next = fp;
    mp->free_fp_list = newnode;
-   pthread_mutex_unlock(lock);
+   pthread_mutex_unlock(&lock);
 
    return 0;
 }
@@ -230,7 +230,7 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
    if (!mp->rdmflg) /* Not Ramdom acess device, then it serial device*/
       mp->cursor = 0;
 
-   pthread_mutex_init(lock, NULL);
+   pthread_mutex_init(&lock, NULL);
 
    return 0;
 }
