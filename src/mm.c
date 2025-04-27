@@ -7,6 +7,9 @@
 #include "../include/mm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
+
+pthread_mutex_t pte_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * init_pte - Initialize PTE entry
@@ -19,6 +22,7 @@ int init_pte(uint32_t *pte,
              int swptyp, // swap type
              int swpoff) // swap offset
 {
+  pthread_mutex_lock(&pte_lock);
   if (pre != 0) {
     if (swp == 0) { // Non swap ~ page online
       if (fpn == 0)
@@ -42,6 +46,8 @@ int init_pte(uint32_t *pte,
     }
   }
 
+  pthread_mutex_unlock(&pte_lock);
+
   return 0;
 }
 
@@ -53,11 +59,13 @@ int init_pte(uint32_t *pte,
  */
 int pte_set_swap(uint32_t *pte, int swptyp, int swpoff)
 {
+  pthread_mutex_lock(&pte_lock);
   SETBIT(*pte, PAGING_PTE_PRESENT_MASK);
   SETBIT(*pte, PAGING_PTE_SWAPPED_MASK);
 
   SETVAL(*pte, swptyp, PAGING_PTE_SWPTYP_MASK, PAGING_PTE_SWPTYP_LOBIT);
   SETVAL(*pte, swpoff, PAGING_PTE_SWPOFF_MASK, PAGING_PTE_SWPOFF_LOBIT);
+  pthread_mutex_unlock(&pte_lock);
 
   return 0;
 }
@@ -69,10 +77,12 @@ int pte_set_swap(uint32_t *pte, int swptyp, int swpoff)
  */
 int pte_set_fpn(uint32_t *pte, int fpn)
 {
+  pthread_mutex_lock(&pte_lock);
   SETBIT(*pte, PAGING_PTE_PRESENT_MASK);
   CLRBIT(*pte, PAGING_PTE_SWAPPED_MASK);
 
   SETVAL(*pte, fpn, PAGING_PTE_FPN_MASK, PAGING_PTE_FPN_LOBIT);
+  pthread_mutex_unlock(&pte_lock);
 
   return 0;
 }
@@ -267,8 +277,10 @@ struct vm_rg_struct *init_vm_rg(int rg_start, int rg_end)
 
 int enlist_vm_rg_node(struct vm_rg_struct **rglist, struct vm_rg_struct *rgnode)
 {
+  pthread_mutex_lock(&pte_lock);
   rgnode->rg_next = *rglist;
   *rglist = rgnode;
+  pthread_mutex_unlock(&pte_lock);
 
   return 0;
 }

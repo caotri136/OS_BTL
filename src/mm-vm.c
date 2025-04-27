@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
+pthread_mutex_t mm_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*get_vma_by_num - get vm area by numID
  *@mm: memory region
  *@vmaid: ID vm area to alloc memory region
@@ -38,7 +40,9 @@ struct vm_area_struct *get_vma_by_num(struct mm_struct *mm, int vmaid)
 
 int __mm_swap_page(struct pcb_t *caller, int vicfpn , int swpfpn)
 {
+    pthread_mutex_lock(&mm_mutex);
     __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
+    pthread_mutex_unlock(&mm_mutex);
     return 0;
 }
 
@@ -100,6 +104,8 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
  */
 int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 {
+  pthread_mutex_lock(&mm_mutex);
+  
   struct vm_rg_struct * newrg = malloc(sizeof(struct vm_rg_struct));
   int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
   int incnumpage =  inc_amt / PAGING_PAGESZ;
@@ -110,7 +116,10 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 
   /*Validate overlap of obtained region */
   if (validate_overlap_vm_area(caller, vmaid, area->rg_start, area->rg_end) < 0)
+  {
+    pthread_mutex_unlock(&mm_mutex);
     return -1; /*Overlap and failed allocation */
+  }
 
   /* TODO: Obtain the new vm area based on vmaid */
   //cur_vma->vm_end... 
@@ -119,7 +128,12 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 
   if (vm_map_ram(caller, area->rg_start, area->rg_end, 
                     old_end, incnumpage , newrg) < 0)
+  {
+    pthread_mutex_unlock(&mm_mutex);
     return -1; /* Map the memory to MEMRAM */
+  }
+
+    pthread_mutex_unlock(&mm_mutex);
 
   return 0;
 }
